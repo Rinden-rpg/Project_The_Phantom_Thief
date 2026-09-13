@@ -128,7 +128,7 @@
     setInterval(() => { isNight = !isNight; }, 10 * 60 * 1000);
 
     // --- 3. 渲染核心与伪随机算法 ---
-    const TILE_SIZE = 128; // 1个地砖单位大小
+    const TILE_SIZE = 57; // 1个地砖单位大小修改为57px
     let cameraX = 0;       // 摄像机世界坐标（决定背景往哪边滚）
     let cameraY = 0;
     const speed = 5;
@@ -204,7 +204,8 @@
                     const screenY = tileY * TILE_SIZE - cameraY + canvas.height / 2;
 
                     if (currentLight.complete) {
-                        ctx.drawImage(currentLight, screenX, screenY, TILE_SIZE, TILE_SIZE * 2);
+                        // 将路灯大小修改为 TILE_SIZE, TILE_SIZE（即57px * 57px）
+                        ctx.drawImage(currentLight, screenX, screenY, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
