@@ -19,21 +19,21 @@
         }
         #miku {
             position: absolute;
-            width: 3cm;   /* 设定角色宽度 */
-            height: 5.5cm; /* 设定角色高度 */
+            width: 80px;  /* 根据截图比例，大幅放大角色 */
+            height: auto;
             /* 严格在 CSS 中锚定中心点，保持移动干脆，无过渡动画 */
             transform: translate(-50%, -50%); 
         }
         #joystick {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            width: 4.2cm;  /* 设定摇杆整体宽度 */
-            height: 4.2cm; /* 设定摇杆整体高度 */
+            bottom: 50px;
+            left: 40px;
+            width: 260px;  /* 巨幅放大摇杆外壳，贴合截图的视觉比例 */
+            height: 260px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 0.5cm;    /* 设定按键之间的间距 */
+            gap: 5px;    /* 按键间距 */
             /* 加固防浏览器默认滚动/手势 */
             touch-action: none; 
         }
@@ -117,9 +117,9 @@
         mikuX += dx;
         mikuY += dy;
 
-        // 动态读取图片宽高的一半进行碰撞检测，完美兼容 cm 单位
-        const halfWidth = (miku.offsetWidth / 2) || 25;
-        const halfHeight = (miku.offsetHeight / 2) || 25;
+        // 动态读取图片宽高的一半进行碰撞检测，完美兼容动态放大后的尺寸
+        const halfWidth = (miku.offsetWidth / 2) || 40;
+        const halfHeight = (miku.offsetHeight / 2) || 40;
 
         // 边界限制
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
@@ -165,7 +165,7 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        const deadZone = 15;
+        const deadZone = 25; // 因为摇杆整体放大了，中心死区也适当扩大一点手感更好
         
         joystickInputs.w = false;
         joystickInputs.s = false;
