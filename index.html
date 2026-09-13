@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 强制锁定移动端视口，防止整体缩得太小 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Miku 控制</title>
     <style>
@@ -20,7 +19,13 @@
         }
         #miku {
             position: absolute;
-            width: 120px; /* 适当放大了 iPad 上的立绘大小，可在此调整 */
+            /* === 🚀 核心像素级优化：放大时保持像素点清晰不模糊 === */
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            
+            /* 如果原图太小，你可以通过修改这里的宽度来等比例放大它 */
+            /* 比如 64px, 96px, 128px 等（推荐用原图尺寸的整数倍） */
+            width: 96px; 
             height: auto;
             transform: translate(-50%, -50%); 
         }
@@ -28,7 +33,7 @@
             position: absolute;
             bottom: 40px;
             left: 40px;
-            width: 180px; /* 适当放大了摇杆区域，方便手指揉搓 */
+            width: 180px; 
             height: 180px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -42,9 +47,10 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            pointer-events: none; 
+            pointer-events: none;
+            /* 摇杆图片如果是像素风，也可以开启防模糊 */
+            image-rendering: pixelated;
         }
-        /* 这里的图片后缀全部完美适配了你仓库里的 .png.PNG 格式 */
         #btn-up { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
         #btn-left { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
         #btn-middle { grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
@@ -80,7 +86,7 @@
     
     let mikuX = window.innerWidth / 2;
     let mikuY = window.innerHeight / 2;
-    const speed = 6; // 稍微提升了一点移动速度，让手感更好
+    const speed = 4; // 针对像素小人稍微调慢一点速度，看起来移动更自然
 
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
@@ -107,8 +113,8 @@
         mikuX += dx;
         mikuY += dy;
 
-        const halfWidth = (miku.offsetWidth / 2) || 40;
-        const halfHeight = (miku.offsetHeight / 2) || 40;
+        const halfWidth = (miku.offsetWidth / 2) || 20;
+        const halfHeight = (miku.offsetHeight / 2) || 20;
 
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
         mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
@@ -170,7 +176,6 @@
         else if (angle >= -Math.PI * 1/8 && angle <= Math.PI * 1/8) {
             joystickInputs.d = true; btnRight.style.backgroundImage = "url('right_02.png.PNG')";
         }
-        // 斜向移动判定及变色
         else if (angle > -Math.PI * 7/8 && angle < -Math.PI * 5/8) {
             joystickInputs.w = true; joystickInputs.a = true;
             btnUp.style.backgroundImage = "url('up_02.png.PNG')"; btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
@@ -207,6 +212,7 @@
     function handleJoystickTouch(e) {
         e.preventDefault();
         if (e.touches.length === 0) return;
+        // 修正为准确获取第一根手指的坐标
         calculateJoystickInput(e.touches[0].clientX, e.touches[0].clientY);
     }
 
@@ -228,8 +234,8 @@
     });
 
     window.addEventListener('resize', () => {
-        const halfWidth = (miku.offsetWidth / 2) || 40;
-        const halfHeight = (miku.offsetHeight / 2) || 40;
+        const halfWidth = (miku.offsetWidth / 2) || 20;
+        const halfHeight = (miku.offsetHeight / 2) || 20;
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
         mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
     });
