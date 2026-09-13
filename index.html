@@ -1,3 +1,4 @@
+把屏幕比例固定成横屏3:4（3k）
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -5,16 +6,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Project: The Phantom Thief — Demo</title>
 <style>
+    * {
+        box-sizing: border-box;
+    }
 
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #f0f0f0;
+        touch-action: none;
+        user-select: none;
+    }
 
-    /* 固定为 3K 分辨率 (2880x2160)，4:3 横屏比例 */
     #game-container {
         position: relative;
-        width: 3072px; 
-        height: 2304px;
-        background-color: #f0f0f0;
-        overflow: hidden;
-        transform-origin: center center; /* 从中心点进行缩放 */
+        width: 100vw;
+        height: 100vh;
     }
 
     /* 人物：锁死原样，一丝不动 */
@@ -56,12 +63,12 @@
         pointer-events: auto;
     }
 
-    /* ↓ 补全了单位 px，保持规范 */
-    #btn-up    { left: 0;      top: -200px; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left: -200px; top: 0;      background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left: 0;      top: 0;      background-image: url('middle.png.PNG'); }
-    #btn-right { left: 200px;  top: 0;      background-image: url('right_01.png.PNG'); }
-    #btn-down  { left: 0;      top: 200px;  background-image: url('down_01.png.PNG'); }
+    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
+    #btn-up    { left:0;   top:-200; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
+    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
+    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
 
 </style>
 </head>
@@ -80,21 +87,6 @@
 </div>
 
 <script>
-    // --- 屏幕缩放自适应逻辑 ---
-    const GAME_WIDTH = 2880;
-    const GAME_HEIGHT = 2160;
-    let currentScale = 1;
-
-    function resizeGame() {
-        const scaleX = window.innerWidth / GAME_WIDTH;
-        const scaleY = window.innerHeight / GAME_HEIGHT;
-        currentScale = Math.min(scaleX, scaleY);
-        document.getElementById('game-container').style.transform = `scale(${currentScale})`;
-    }
-    window.addEventListener('resize', resizeGame);
-    resizeGame(); // 初始化调用
-
-    // --- 游戏主逻辑 ---
     const miku = document.getElementById('miku');
     const joyCenter = document.getElementById('joy-center');
     const btnUp = document.getElementById('btn-up');
@@ -102,11 +94,9 @@
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
 
-    // 坐标相对于 3K 画布内部
-    let mikuX = GAME_WIDTH / 2;
-    let mikuY = GAME_HEIGHT / 2;
-    // 提示：因为地图变成了3K分辨率，如果觉得5速度太慢，可以把 speed 调大（如 15~20）
-    const speed = 5; 
+    let mikuX = window.innerWidth / 2;
+    let mikuY = window.innerHeight / 2;
+    const speed = 5;
 
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
@@ -136,9 +126,8 @@
         const halfWidth = (miku.offsetWidth / 2) || 80;
         const halfHeight = (miku.offsetHeight / 2) || 80;
 
-        // 边界限制现在基于 3K 固定画布大小，而非当前窗口大小
-        mikuX = Math.max(halfWidth, Math.min(GAME_WIDTH - halfWidth, mikuX));
-        mikuY = Math.max(halfHeight, Math.min(GAME_HEIGHT - halfHeight, mikuY));
+        mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
+        mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
 
         miku.style.left = mikuX + 'px';
         miku.style.top = mikuY + 'px';
@@ -173,10 +162,10 @@
         const centerX = rect.left;
         const centerY = rect.top;
 
-        // 由于整个画布被缩放了，触发坐标需要除以 currentScale，转换回 3K 逻辑坐标系下
-        const deltaX = (clientX - centerX) / currentScale;
-        const deltaY = (clientY - centerY) / currentScale;
+        const deltaX = clientX - centerX;
+        const deltaY = clientY - centerY;
 
+        // 触发阈值对齐200px间距：超过100px就触发对应方向
         const triggerThreshold = 100;
         const deadZone = 30;
 
