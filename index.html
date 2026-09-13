@@ -17,7 +17,7 @@
             width: 100vw;
             height: 100vh;
         }
-        /* 【人物：保持你现在刚好合适的大小！不改动！】 */
+        /* 人物：保持当前完美大小，不动！ */
         #miku {
             position: absolute;
             width: 160px;
@@ -27,21 +27,22 @@
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
-        /* 【摇杆网格：底层尺寸不变，保证触摸位置正确】 */
+        /* 【整组摇杆！一起放大！！复刻原版紧凑十字！！】 */
         #joystick {
             position: absolute;
             bottom: 40px;
             left: 40px;
-            width: 320px;
-            height: 320px;
+            width: 240px;
+            height: 240px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 2px; /* 间距压到很小，按键挨得近 */
+            gap: 0px; /* 零缝隙！原版十字紧紧拼在一起！ */
             touch-action: none;
+            /* 整块放大！位置锚定左下角，不拆散图标！ */
+            transform: scale(3.2);
             transform-origin: bottom left;
         }
-        /* 【只放大图标画面！！感应区域不变，不会点歪】 */
         .joy-btn {
             width: 100%;
             height: 100%;
@@ -49,7 +50,6 @@
             background-repeat: no-repeat;
             background-position: center;
             pointer-events: auto;
-            transform: scale(5); /* 视觉放大500% */
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
