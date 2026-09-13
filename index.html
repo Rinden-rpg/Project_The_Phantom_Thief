@@ -35,11 +35,11 @@
     }
 
     /* 摇杆定位锚点 = 四角星【中心】
-       距离屏幕左边缘100px，距离屏幕下边缘100px，真实物理像素！ */
+       距离屏幕左边缘500px，距离屏幕下边缘500px，真实物理像素！ */
     #joy-center {
         position: absolute;
-        left: 100px;
-        bottom: 100px;
+        left: 500px;
+        bottom: 500px;
         width: 0;
         height: 0;
     }
@@ -49,9 +49,9 @@
     - transform-origin:center; scale(5)只放大【画面，不改位置坐标】！！ */
     .joy-btn {
         position: absolute;
-        width: 50px;
-        height: 50px;
-        transform: translate(-50%, -50%) scale(5);
+        width: 500px;
+        height: 500px;
+        transform: translate(-500%, -500%) scale(5);
         transform-origin: center;
         background-size: contain;
         background-repeat: no-repeat;
