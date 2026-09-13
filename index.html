@@ -7,20 +7,32 @@
 <style>
     * {
         box-sizing: border-box;
+        margin:0;
+        padding:0;
     }
 
     body {
-        margin: 0;
         overflow: hidden;
-        background-color: #f0f0f0;
+        background-color: #dddddd; /* 画布外的遮罩底色，和游戏#f0f0f0区分开 */
         touch-action: none;
         user-select: none;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        width:100vw;
+        height:100vh;
     }
 
+    /* ========== 硬性锁死 3:4 (宽:高 = 3:4)，基准3K：2160×2880 ========== */
     #game-container {
         position: relative;
-        width: 100vw;
-        height: 100vh;
+        width: 2160px;
+        height: 2880px;
+        max-width: 100vw;
+        max-height: 100vh;
+        /* 自动等比缩小，不变形 */
+        transform-origin: center center;
+        background-color: #f0f0f0;
     }
 
     /* 人物：锁死原样，一丝不动 */
@@ -35,18 +47,26 @@
     }
 
     /* 摇杆定位锚点 = 四角星【中心】
-       距离屏幕左边缘500px，距离屏幕下边缘500px，真实物理像素！ */
+       距离**游戏画布**左边缘60px，距离**游戏画布**下边缘60px */
     #joy-center {
         position: absolute;
-        left: 500px;
-        bottom: 500px;
+        left: 60px;
+        bottom: 60px;
         width: 0;
         height: 0;
     }
 
-    /* 每个按钮：
-    - 布局原点是自己的中心
-    - transform-origin:center; scale(5)只放大【画面，不改位置坐标】！！ */
+    /* 摇杆交互热区：刚好包围全部方向按钮的布局范围 */
+    #joy-hitbox {
+        position: absolute;
+        left: -200px;
+        top: -200px;
+        width: 401px;
+        height: 401px;
+        /* background:rgba(255,0,0,0.1); 取消注释可以可视化热区调试 */
+    }
+
+    /* 每个按钮：scale(5)只放大画面，不改位置坐标 */
     .joy-btn {
         position: absolute;
         width: 50px;
@@ -58,16 +78,15 @@
         background-position: center;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
-        /* 热区还是40px原始大小！视觉是放大的像素画 */
         pointer-events: auto;
     }
 
-    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
-    #btn-up    { left:0;   top:-200; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
-    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
-    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
+    /* 真实像素距离：四个箭头中心 ↔ 四角星中心严格200px */
+    #btn-up    { left:0px;   top:-200px; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left:-200px;top:0px;     background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left:0px;   top:0px;     background-image: url('middle.png.PNG'); }
+    #btn-right { left:200px; top:0px;     background-image: url('right_01.png.PNG'); }
+    #btn-down  { left:0px;   top:200px;   background-image: url('down_01.png.PNG'); }
 
 </style>
 </head>
@@ -77,6 +96,7 @@
     <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
 
     <div id="joy-center">
+        <div id="joy-hitbox"></div>
         <div id="btn-up" class="joy-btn"></div>
         <div id="btn-left" class="joy-btn"></div>
         <div id="btn-middle" class="joy-btn"></div>
@@ -88,13 +108,15 @@
 <script>
     const miku = document.getElementById('miku');
     const joyCenter = document.getElementById('joy-center');
+    const joyHitbox = document.getElementById('joy-hitbox');
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
+    const gameContainer = document.getElementById("game-container");
 
-    let mikuX = window.innerWidth / 2;
-    let mikuY = window.innerHeight / 2;
+    let mikuX = gameContainer.clientWidth / 2;
+    let mikuY = gameContainer.clientHeight / 2;
     const speed = 5;
 
     const keyboardInputs = { w: false, a: false, s: false, d: false };
@@ -125,8 +147,9 @@
         const halfWidth = (miku.offsetWidth / 2) || 80;
         const halfHeight = (miku.offsetHeight / 2) || 80;
 
-        mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
-        mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
+        // 边界限制改成【游戏画布内】，不是整个屏幕！重要！
+        mikuX = Math.max(halfWidth, Math.min(gameContainer.clientWidth - halfWidth, mikuX));
+        mikuY = Math.max(halfHeight, Math.min(gameContainer.clientHeight - halfHeight, mikuY));
 
         miku.style.left = mikuX + 'px';
         miku.style.top = mikuY + 'px';
@@ -157,14 +180,18 @@
     }
 
     function calculateJoystickInput(clientX, clientY) {
-        const rect = joyCenter.getBoundingClientRect();
-        const centerX = rect.left;
-        const centerY = rect.top;
+        // 把屏幕坐标 → **转换到游戏画布的本地坐标**！不然缩放后摇杆会错位！
+        const rectCanvas = gameContainer.getBoundingClientRect();
+        const scaleX = gameContainer.clientWidth / rectCanvas.width;
+        const scaleY = gameContainer.clientHeight / rectCanvas.height;
+
+        const rectJoy = joyCenter.getBoundingClientRect();
+        const centerX = rectJoy.left + (rectJoy.left - rectCanvas.left)*(scaleX-1);
+        const centerY = rectJoy.top + (rectJoy.top - rectCanvas.top)*(scaleY-1);
 
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        // 触发阈值对齐200px间距：超过100px就触发对应方向
         const triggerThreshold = 100;
         const deadZone = 30;
 
@@ -210,12 +237,12 @@
         resetJoystickVisuals();
     }
 
-    document.addEventListener('touchstart', handleJoystickTouch, { passive: false });
-    document.addEventListener('touchmove', handleJoystickTouch, { passive: false });
-    document.addEventListener('touchend', clearJoystickInput, { passive: false });
-    document.addEventListener('touchcancel', clearJoystickInput, { passive: false });
+    joyHitbox.addEventListener('touchstart', handleJoystickTouch, { passive: false });
+    joyHitbox.addEventListener('touchmove', handleJoystickTouch, { passive: false });
+    joyHitbox.addEventListener('touchend', clearJoystickInput, { passive: false });
+    joyHitbox.addEventListener('touchcancel', clearJoystickInput, { passive: false });
 
-    document.addEventListener('mousedown', (e) => {
+    joyHitbox.addEventListener('mousedown', (e) => {
         e.preventDefault();
         isJoystickDragging = true;
         calculateJoystickInput(e.clientX, e.clientY);
@@ -231,4 +258,4 @@
 
 </script>
 </body>
-</html> 
+</html>
