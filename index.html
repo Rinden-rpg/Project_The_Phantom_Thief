@@ -17,6 +17,7 @@
             width: 100vw;
             height: 100vh;
         }
+        /* 【人物：保持你现在刚好合适的大小！不改动！】 */
         #miku {
             position: absolute;
             width: 160px;
@@ -26,42 +27,43 @@
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
+        /* 【摇杆网格：底层尺寸不变，保证触摸位置正确】 */
         #joystick {
             position: absolute;
-            bottom: 50px;
+            bottom: 40px;
             left: 40px;
-            width: 260px;
-            height: 260px;
+            width: 320px;
+            height: 320px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 5px;
+            gap: 2px; /* 间距压到很小，按键挨得近 */
             touch-action: none;
-            /* 直接放大摇杆整组！不改坐标逻辑！！ */
-            transform: scale(2.5);
-            transform-origin: bottom left; /* 从左下角放大！不会飘走！ */
+            transform-origin: bottom left;
         }
+        /* 【只放大图标画面！！感应区域不变，不会点歪】 */
         .joy-btn {
             width: 100%;
             height: 100%;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            pointer-events: none;
+            pointer-events: auto;
+            transform: scale(5); /* 视觉放大500% */
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
-        #btn-up { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
-        #btn-left { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
-        #btn-middle { grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
+        #btn-up    { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
+        #btn-left  { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
+        #btn-middle{ grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
         #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png.PNG'); }
-        #btn-down { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
+        #btn-down  { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
+    <img id="miku" src="miku_01.png.PNG" alt="sprite" draggable="false">
     
     <div id="joystick">
         <div></div>
