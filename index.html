@@ -19,23 +19,27 @@
         }
         #miku {
             position: absolute;
-            width: 400px;
+            width: 160px;
             height: auto;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(2.5); 
+            transform-origin: center;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
         #joystick {
             position: absolute;
-            bottom: 120px;
-            left: 100px;
-            width: 1200px;
-            height: 1200px;
+            bottom: 50px;
+            left: 40px;
+            width: 260px;
+            height: 260px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 20px;
+            gap: 5px;
             touch-action: none;
+            /* 直接放大摇杆整组！不改坐标逻辑！！ */
+            transform: scale(2.5);
+            transform-origin: bottom left; /* 从左下角放大！不会飘走！ */
         }
         .joy-btn {
             width: 100%;
@@ -72,7 +76,6 @@
     </div>
 </div>
 
-<!-- ========== 这里就是JS！！在body里面、容器div的下面 ========== -->
 <script>
     const miku = document.getElementById('miku');
     const joystick = document.getElementById('joystick');
@@ -110,9 +113,8 @@
         mikuX += dx;
         mikuY += dy;
 
-        // ✅放大后的兜底边界值
-        const halfWidth = (miku.offsetWidth / 2) || 200;
-        const halfHeight = (miku.offsetHeight / 2) || 200;
+        const halfWidth = (miku.offsetWidth / 2) || 80;
+        const halfHeight = (miku.offsetHeight / 2) || 80;
 
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
         mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
@@ -153,8 +155,7 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        // ✅放大摇杆→扩大死区，防止一碰就走、手感飘
-        const deadZone = 80;
+        const deadZone = 25;
         
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -223,6 +224,5 @@
     });
 
 </script>
-<!-- JS结束！不要写到</body>外面！ -->
 </body>
 </html>
