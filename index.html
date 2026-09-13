@@ -19,23 +19,22 @@
         }
         #miku {
             position: absolute;
-            width: 80px;
+            width: 400px;
             height: auto;
             transform: translate(-50%, -50%);
-            /* 关键：锁定锐利像素，禁止模糊缩放！ */
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
         #joystick {
             position: absolute;
-            bottom: 50px;
-            left: 40px;
-            width: 260px;
-            height: 260px;
+            bottom: 120px;
+            left: 100px;
+            width: 1200px;
+            height: 1200px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 5px;
+            gap: 20px;
             touch-action: none;
         }
         .joy-btn {
@@ -45,7 +44,6 @@
             background-repeat: no-repeat;
             background-position: center;
             pointer-events: none;
-            /* 摇杆像素同样防模糊 */
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -74,6 +72,7 @@
     </div>
 </div>
 
+<!-- ========== 这里就是JS！！在body里面、容器div的下面 ========== -->
 <script>
     const miku = document.getElementById('miku');
     const joystick = document.getElementById('joystick');
@@ -111,8 +110,9 @@
         mikuX += dx;
         mikuY += dy;
 
-        const halfWidth = (miku.offsetWidth / 2) || 40;
-        const halfHeight = (miku.offsetHeight / 2) || 40;
+        // ✅放大后的兜底边界值
+        const halfWidth = (miku.offsetWidth / 2) || 200;
+        const halfHeight = (miku.offsetHeight / 2) || 200;
 
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
         mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
@@ -153,7 +153,8 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        const deadZone = 25;
+        // ✅放大摇杆→扩大死区，防止一碰就走、手感飘
+        const deadZone = 80;
         
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -222,6 +223,6 @@
     });
 
 </script>
-
+<!-- JS结束！不要写到</body>外面！ -->
 </body>
 </html>
