@@ -35,18 +35,18 @@
     }
 
     /* 摇杆定位锚点 = 四角星【中心】
-       ✅ 修改：距离屏幕左边缘60px，距离屏幕下边缘60px */
+       距离屏幕左边缘100px，距离屏幕下边缘100px，真实物理像素！ */
     #joy-center {
         position: absolute;
-        left: 60px;
-        bottom: 60px;
+        left: 100px;
+        bottom: 100px;
         width: 0;
         height: 0;
     }
 
     /* 每个按钮：
     - 布局原点是自己的中心
-    - scale(5)只放大画面，不改位置坐标 */
+    - transform-origin:center; scale(5)只放大【画面，不改位置坐标】！！ */
     .joy-btn {
         position: absolute;
         width: 50px;
@@ -58,15 +58,16 @@
         background-position: center;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
+        /* 热区还是40px原始大小！视觉是放大的像素画 */
         pointer-events: auto;
     }
 
-    /* 真实像素距离：**四个箭头中心 ↔ 四角星中心严格200px**，已补上px单位！ */
-    #btn-up    { left:0px;   top:-200px; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left:-200px;top:0px;     background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left:0px;   top:0px;     background-image: url('middle.png.PNG'); }
-    #btn-right { left:200px; top:0px;     background-image: url('right_01.png.PNG'); }
-    #btn-down  { left:0px;   top:200px;   background-image: url('down_01.png.PNG'); }
+    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
+    #btn-up    { left:0;   top:-200; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
+    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
+    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
 
 </style>
 </head>
@@ -163,6 +164,7 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
+        // 触发阈值对齐200px间距：超过100px就触发对应方向
         const triggerThreshold = 100;
         const deadZone = 30;
 
@@ -208,10 +210,10 @@
         resetJoystickVisuals();
     }
 
-    joystick.addEventListener?.('touchstart', handleJoystickTouch, { passive: false });
-    joystick.addEventListener?.('touchmove', handleJoystickTouch, { passive: false });
-    joystick.addEventListener?.('touchend', clearJoystickInput, { passive: false });
-    joystick.addEventListener?.('touchcancel', clearJoystickInput, { passive: false });
+    document.addEventListener('touchstart', handleJoystickTouch, { passive: false });
+    document.addEventListener('touchmove', handleJoystickTouch, { passive: false });
+    document.addEventListener('touchend', clearJoystickInput, { passive: false });
+    document.addEventListener('touchcancel', clearJoystickInput, { passive: false });
 
     document.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -229,4 +231,4 @@
 
 </script>
 </body>
-</html>
+</html> 
