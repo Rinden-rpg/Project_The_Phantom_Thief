@@ -23,7 +23,7 @@
         height: 100vh;
     }
 
-    /* 人物：锁死原样，一丝不动 */
+    /* 人物：保持当前大小，完全不动 */
     #miku {
         position: absolute;
         width: 160px;
@@ -34,19 +34,16 @@
         image-rendering: crisp-edges;
     }
 
-    /* 摇杆定位锚点 = 四角星【中心】
-       距离屏幕左边缘500px，距离屏幕下边缘500px，真实物理像素！ */
-    #joy-center {
+    /* 摇杆整体位置：保持原版左下区域 */
+    #joystick {
         position: absolute;
-        left: 500px;
-        bottom: 500px;
+        left: 50px;
+        bottom: 50px;
         width: 0;
         height: 0;
     }
 
-    /* 每个按钮：
-    - 布局原点是自己的中心
-    - transform-origin:center; scale(5)只放大【画面，不改位置坐标】！！ */
+    /* 5个部位各自独立放大5倍，布局坐标不受scale影响 */
     .joy-btn {
         position: absolute;
         width: 40px;
@@ -56,19 +53,17 @@
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
+        pointer-events: auto;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
-        /* 热区还是40px原始大小！视觉是放大的像素画 */
-        pointer-events: auto;
     }
 
-    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
-    #btn-up    { left:0;   top:-200px; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
-    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
-    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
-
+    /* 统一间距：所有箭头中心到四角星中心都是200px */
+    #btn-up    { left: 0px;   top: -200px; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left: -200px; top: 0px;   background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left: 0px;   top: 0px;   background-image: url('middle.png.PNG'); }
+    #btn-right { left: 200px;  top: 0px;   background-image: url('right_01.png.PNG'); }
+    #btn-down  { left: 0px;   top: 200px; background-image: url('down_01.png.PNG'); }
 </style>
 </head>
 <body>
@@ -76,7 +71,7 @@
 <div id="game-container">
     <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
 
-    <div id="joy-center">
+    <div id="joystick">
         <div id="btn-up" class="joy-btn"></div>
         <div id="btn-left" class="joy-btn"></div>
         <div id="btn-middle" class="joy-btn"></div>
@@ -87,7 +82,7 @@
 
 <script>
     const miku = document.getElementById('miku');
-    const joyCenter = document.getElementById('joy-center');
+    const joystick = document.getElementById('joystick');
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
@@ -157,16 +152,15 @@
     }
 
     function calculateJoystickInput(clientX, clientY) {
-        const rect = joyCenter.getBoundingClientRect();
+        const rect = joystick.getBoundingClientRect();
         const centerX = rect.left;
         const centerY = rect.top;
 
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        // 触发阈值对齐200px间距：超过100px就触发对应方向
-        const triggerThreshold = 100;
         const deadZone = 30;
+        const triggerThreshold = 100;
 
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -174,7 +168,9 @@
         joystickInputs.d = false;
         resetJoystickVisuals();
 
-        if (Math.abs(deltaX) < deadZone && Math.abs(deltaY) < deadZone) return;
+        if (Math.abs(deltaX) < deadZone && Math.abs(deltaY) < deadZone) {
+            return;
+        }
 
         if (deltaY < -triggerThreshold) {
             joystickInputs.w = true;
@@ -201,7 +197,7 @@
     }
 
     function clearJoystickInput(e) {
-        if(e) e.preventDefault();
+        if (e) e.preventDefault();
         isJoystickDragging = false;
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -210,12 +206,12 @@
         resetJoystickVisuals();
     }
 
-    document.addEventListener('touchstart', handleJoystickTouch, { passive: false });
-    document.addEventListener('touchmove', handleJoystickTouch, { passive: false });
-    document.addEventListener('touchend', clearJoystickInput, { passive: false });
-    document.addEventListener('touchcancel', clearJoystickInput, { passive: false });
+    joystick.addEventListener('touchstart', handleJoystickTouch, { passive: false });
+    joystick.addEventListener('touchmove', handleJoystickTouch, { passive: false });
+    joystick.addEventListener('touchend', clearJoystickInput, { passive: false });
+    joystick.addEventListener('touchcancel', clearJoystickInput, { passive: false });
 
-    document.addEventListener('mousedown', (e) => {
+    joystick.addEventListener('mousedown', (e) => {
         e.preventDefault();
         isJoystickDragging = true;
         calculateJoystickInput(e.clientX, e.clientY);
@@ -227,8 +223,11 @@
         calculateJoystickInput(e.clientX, e.clientY);
     }, { passive: false });
 
-    document.addEventListener('mouseup', clearJoystickInput);
-
+    document.addEventListener('mouseup', (e) => {
+        if (!isJoystickDragging) return;
+        clearJoystickInput(e);
+    });
 </script>
+
 </body>
 </html>
