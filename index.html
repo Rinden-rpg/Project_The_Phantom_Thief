@@ -46,17 +46,17 @@
             /* 防止拖拽图片触发浏览器默认行为 */
             pointer-events: none; 
         }
-        #btn-up { grid-column: 2; grid-row: 1; background-image: url('up_01.png'); }
-        #btn-left { grid-column: 1; grid-row: 2; background-image: url('left_01.png'); }
-        #btn-middle { grid-column: 2; grid-row: 2; background-image: url('middle.png'); }
-        #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png'); }
-        #btn-down { grid-column: 2; grid-row: 3; background-image: url('down_01.png'); }
+        #btn-up { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
+        #btn-left { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
+        #btn-middle { grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
+        #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png.PNG'); }
+        #btn-down { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <img id="miku" src="miku_01.png" alt="Miku" draggable="false">
+    <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
     
     <!-- 摇杆作为一个整体监听触摸与鼠标拖动 -->
     <div id="joystick">
@@ -150,10 +150,10 @@
 
     // --- 摇杆视觉与逻辑核心 ---
     function resetJoystickVisuals() {
-        btnUp.style.backgroundImage = "url('up_01.png')";
-        btnDown.style.backgroundImage = "url('down_01.png')";
-        btnLeft.style.backgroundImage = "url('left_01.png')";
-        btnRight.style.backgroundImage = "url('right_01.png')";
+        btnUp.style.backgroundImage = "url('up_01.png.PNG')";
+        btnDown.style.backgroundImage = "url('down_01.png.PNG')";
+        btnLeft.style.backgroundImage = "url('left_01.png.PNG')";
+        btnRight.style.backgroundImage = "url('right_01.png.PNG')";
     }
 
     // 统合坐标计算逻辑（支持 Touch 与 Mouse）
@@ -179,19 +179,19 @@
 
         if (deltaY < -deadZone) {
             joystickInputs.w = true;
-            btnUp.style.backgroundImage = "url('up_02.png')";
+            btnUp.style.backgroundImage = "url('up_02.png.PNG')";
         }
         if (deltaY > deadZone) {
             joystickInputs.s = true;
-            btnDown.style.backgroundImage = "url('down_02.png')";
+            btnDown.style.backgroundImage = "url('down_02.png.PNG')";
         }
         if (deltaX < -deadZone) {
             joystickInputs.a = true;
-            btnLeft.style.backgroundImage = "url('left_02.png')";
+            btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
         }
         if (deltaX > deadZone) {
             joystickInputs.d = true;
-            btnRight.style.backgroundImage = "url('right_02.png')";
+            btnRight.style.backgroundImage = "url('right_02.png.PNG')";
         }
     }
 
