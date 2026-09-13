@@ -2,14 +2,15 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 强制锁定移动端视口，防止整体缩得太小 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Miku 控制</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: #f0f0f0;
-            touch-action: none; /* 防止页面滚动和缩放 */
+            touch-action: none; 
             user-select: none;
         }
         #game-container {
@@ -19,22 +20,20 @@
         }
         #miku {
             position: absolute;
-            width: 50px; /* 立绘宽度，可根据实际图片大小在此调整 */
+            width: 120px; /* 适当放大了 iPad 上的立绘大小，可在此调整 */
             height: auto;
-            /* 严格在 CSS 中锚定中心点，保持移动干脆，无过渡动画 */
             transform: translate(-50%, -50%); 
         }
         #joystick {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            width: 150px;
-            height: 150px;
+            bottom: 40px;
+            left: 40px;
+            width: 180px; /* 适当放大了摇杆区域，方便手指揉搓 */
+            height: 180px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
             gap: 5px;
-            /* 加固防浏览器默认滚动/手势 */
             touch-action: none; 
         }
         .joy-btn {
@@ -43,9 +42,9 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            /* 防止拖拽图片触发浏览器默认行为 */
             pointer-events: none; 
         }
+        /* 这里的图片后缀全部完美适配了你仓库里的 .png.PNG 格式 */
         #btn-up { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
         #btn-left { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
         #btn-middle { grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
@@ -58,7 +57,6 @@
 <div id="game-container">
     <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
     
-    <!-- 摇杆作为一个整体监听触摸与鼠标拖动 -->
     <div id="joystick">
         <div></div>
         <div id="btn-up" class="joy-btn"></div>
@@ -80,34 +78,26 @@
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
     
-    // 角色初始位置和速度 (坐标代表中心点)
     let mikuX = window.innerWidth / 2;
     let mikuY = window.innerHeight / 2;
-    const speed = 5;
+    const speed = 6; // 稍微提升了一点移动速度，让手感更好
 
-    // 区分键盘和摇杆的输入状态
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
-    
-    // 鼠标拖动状态（桌面端兼容）
     let isJoystickDragging = false;
 
-    // 初始化 Miku 位置
     miku.style.left = mikuX + 'px';
     miku.style.top = mikuY + 'px';
 
-    // 更新角色位置的主循环
     function updatePosition() {
         let dx = 0;
         let dy = 0;
 
-        // 结合键盘和摇杆的输入
         if (keyboardInputs.w || joystickInputs.w) dy -= speed;
         if (keyboardInputs.s || joystickInputs.s) dy += speed;
         if (keyboardInputs.a || joystickInputs.a) dx -= speed;
         if (keyboardInputs.d || joystickInputs.d) dx += speed;
 
-        // 处理斜向移动的速度（归一化）
         if (dx !== 0 && dy !== 0) {
             const length = Math.sqrt(dx * dx + dy * dy);
             dx = (dx / length) * speed;
@@ -117,15 +107,12 @@
         mikuX += dx;
         mikuY += dy;
 
-        // 动态读取图片宽高的一半，取代硬编码的 25px (防止图片未加载时报错，设定默认值25)
-        const halfWidth = (miku.offsetWidth / 2) || 25;
-        const halfHeight = (miku.offsetHeight / 2) || 25;
+        const halfWidth = (miku.offsetWidth / 2) || 40;
+        const halfHeight = (miku.offsetHeight / 2) || 40;
 
-        // 边界限制
         mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
         mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
 
-        // 仅修改 left 和 top，不覆盖 CSS 里的 transform
         miku.style.left = mikuX + 'px';
         miku.style.top = mikuY + 'px';
 
@@ -133,22 +120,16 @@
     }
     updatePosition();
 
-    // --- 键盘事件监听 ---
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
-        if (keyboardInputs.hasOwnProperty(key)) {
-            keyboardInputs[key] = true;
-        }
+        if (keyboardInputs.hasOwnProperty(key)) keyboardInputs[key] = true;
     });
 
     window.addEventListener('keyup', (e) => {
         const key = e.key.toLowerCase();
-        if (keyboardInputs.hasOwnProperty(key)) {
-            keyboardInputs[key] = false;
-        }
+        if (keyboardInputs.hasOwnProperty(key)) keyboardInputs[key] = false;
     });
 
-    // --- 摇杆视觉与逻辑核心 ---
     function resetJoystickVisuals() {
         btnUp.style.backgroundImage = "url('up_01.png.PNG')";
         btnDown.style.backgroundImage = "url('down_01.png.PNG')";
@@ -156,7 +137,6 @@
         btnRight.style.backgroundImage = "url('right_01.png.PNG')";
     }
 
-    // 统合坐标计算逻辑（支持 Touch 与 Mouse）
     function calculateJoystickInput(clientX, clientY) {
         const rect = joystick.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -165,7 +145,8 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        const deadZone = 15;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const deadZone = 20; 
         
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -173,33 +154,39 @@
         joystickInputs.d = false;
         resetJoystickVisuals();
 
-        if (Math.abs(deltaX) < deadZone && Math.abs(deltaY) < deadZone) {
-            return;
-        }
+        if (distance < deadZone) return;
 
-        if (deltaY < -deadZone) {
-            joystickInputs.w = true;
-            btnUp.style.backgroundImage = "url('up_02.png.PNG')";
-        }
-        if (deltaY > deadZone) {
-            joystickInputs.s = true;
-            btnDown.style.backgroundImage = "url('down_02.png.PNG')";
-        }
-        if (deltaX < -deadZone) {
-            joystickInputs.a = true;
-            btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
-        }
-        if (deltaX > deadZone) {
-            joystickInputs.d = true;
-            btnRight.style.backgroundImage = "url('right_02.png.PNG')";
-        }
-    }
+        const angle = Math.atan2(deltaY, deltaX);
 
-    // --- 移动端触控监听 ---
-    function handleJoystickTouch(e) {
-        e.preventDefault();
-        if (e.touches.length === 0) return;
-        calculateJoystickInput(e.touches[0].clientX, e.touches[0].clientY);
+        if (angle >= -Math.PI * 5/8 && angle <= -Math.PI * 3/8) {
+            joystickInputs.w = true; btnUp.style.backgroundImage = "url('up_02.png.PNG')";
+        }
+        else if (angle >= Math.PI * 3/8 && angle <= Math.PI * 5/8) {
+            joystickInputs.s = true; btnDown.style.backgroundImage = "url('down_02.png.PNG')";
+        }
+        else if (angle >= Math.PI * 7/8 || angle <= -Math.PI * 7/8) {
+            joystickInputs.a = true; btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
+        }
+        else if (angle >= -Math.PI * 1/8 && angle <= Math.PI * 1/8) {
+            joystickInputs.d = true; btnRight.style.backgroundImage = "url('right_02.png.PNG')";
+        }
+        // 斜向移动判定及变色
+        else if (angle > -Math.PI * 7/8 && angle < -Math.PI * 5/8) {
+            joystickInputs.w = true; joystickInputs.a = true;
+            btnUp.style.backgroundImage = "url('up_02.png.PNG')"; btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
+        }
+        else if (angle > -Math.PI * 3/8 && angle < -Math.PI * 1/8) {
+            joystickInputs.w = true; joystickInputs.d = true;
+            btnUp.style.backgroundImage = "url('up_02.png.PNG')"; btnRight.style.backgroundImage = "url('right_02.png.PNG')";
+        }
+        else if (angle > Math.PI * 5/8 && angle < Math.PI * 7/8) {
+            joystickInputs.s = true; joystickInputs.a = true;
+            btnDown.style.backgroundImage = "url('down_02.png.PNG')"; btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
+        }
+        else if (angle > Math.PI * 1/8 && angle < Math.PI * 3/8) {
+            joystickInputs.s = true; joystickInputs.d = true;
+            btnDown.style.backgroundImage = "url('down_02.png.PNG')"; btnRight.style.backgroundImage = "url('right_02.png.PNG')";
+        }
     }
 
     function clearJoystickInput(e) {
@@ -217,14 +204,18 @@
     joystick.addEventListener('touchend', clearJoystickInput, { passive: false });
     joystick.addEventListener('touchcancel', clearJoystickInput, { passive: false });
 
-    // --- 桌面端鼠标监听 (兼容 PC 端测试游玩) ---
+    function handleJoystickTouch(e) {
+        e.preventDefault();
+        if (e.touches.length === 0) return;
+        calculateJoystickInput(e.touches[0].clientX, e.touches[0].clientY);
+    }
+
     joystick.addEventListener('mousedown', (e) => {
         e.preventDefault();
         isJoystickDragging = true;
         calculateJoystickInput(e.clientX, e.clientY);
     });
 
-    // 绑定到 document 防止鼠标滑出摇杆范围时丢失监听
     document.addEventListener('mousemove', (e) => {
         if (!isJoystickDragging) return;
         e.preventDefault();
@@ -236,7 +227,12 @@
         clearJoystickInput(e);
     });
 
-    // TODO: 之后可在此处继续添加立绘切换、存档、BGM 按钮等扩展功能
+    window.addEventListener('resize', () => {
+        const halfWidth = (miku.offsetWidth / 2) || 40;
+        const halfHeight = (miku.offsetHeight / 2) || 40;
+        mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
+        mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
+    });
 </script>
 
 </body>
