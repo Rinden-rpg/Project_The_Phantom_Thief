@@ -23,7 +23,7 @@
         height: 100vh;
     }
 
-    /* 人物：保持当前大小，完全不动！ */
+    /* 【人物 —— 锁死不动！】 */
     #miku {
         position: absolute;
         width: 160px;
@@ -34,66 +34,62 @@
         image-rendering: crisp-edges;
     }
 
-    /* 摇杆网格放大，容纳 5 个部位各自 500% 放大 */
-    #joystick {
+    /* 摇杆锚点：十字中心点，左下角基准位置 */
+    #joystick-base {
         position: absolute;
-        left: 40px;
-        bottom: 40px;
-        width: 520px;
-        height: 520px;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        grid-template-rows: 1fr 1fr 1fr;
-        gap: 2px;
-        touch-action: none;
+        left: 80px;
+        bottom: 80px;
+        width: 0px;
+        height: 0px;
     }
 
-    /* 方向杆每个部位各自放大 500% */
+    /* 每个按钮：【感应热区很小！图片单独放大5倍】 */
     .joy-btn {
-        width: 100%;
-        height: 100%;
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        transform: translate(-50%, -50%);
+        /* 画面放大500%，热区仍然是40px原版大小！不会点歪！ */
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
+        transform: translate(-50%, -50%) scale(5);
         pointer-events: auto;
-        transform: scale(5);
         image-rendering: pixelated;
         image-rendering: crisp-edges;
     }
 
-    #btn-up    { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
-    #btn-left  { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
-    #btn-middle{ grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
-    #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png.PNG'); }
-    #btn-down  { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
+    /* 精准排布：中心间距200px */
+    #btn-up    { left:0px; top:-200px; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left:-200px; top:0px; background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left:0px; top:0px; background-image: url('middle.png.PNG'); }
+    #btn-right { left:+200px; top:0px; background-image: url('right_01.png.PNG'); }
+    #btn-down  { left:0px; top:+200px; background-image: url('down_01.png.PNG'); }
+
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
+    <img id="miku" src="miku_01.png.PNG" alt="sprite" draggable="false">
 
-    <div id="joystick">
-        <div></div>
+    <div id="joystick-base">
         <div id="btn-up" class="joy-btn"></div>
-        <div></div>
         <div id="btn-left" class="joy-btn"></div>
         <div id="btn-middle" class="joy-btn"></div>
         <div id="btn-right" class="joy-btn"></div>
-        <div></div>
         <div id="btn-down" class="joy-btn"></div>
-        <div></div>
     </div>
 </div>
 
 <script>
     const miku = document.getElementById('miku');
-    const joystick = document.getElementById('joystick');
+    const joystickBase = document.getElementById('joystick-base');
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
-
+    
     let mikuX = window.innerWidth / 2;
     let mikuY = window.innerHeight / 2;
     const speed = 5;
@@ -158,15 +154,15 @@
     }
 
     function calculateJoystickInput(clientX, clientY) {
-        const rect = joystick.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+        const rect = joystickBase.getBoundingClientRect();
+        const centerX = rect.left;
+        const centerY = rect.top;
 
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        const deadZone = 120;
-
+        const deadZone = 40;
+        
         joystickInputs.w = false;
         joystickInputs.s = false;
         joystickInputs.a = false;
@@ -177,19 +173,19 @@
             return;
         }
 
-        if (deltaY < -deadZone) {
+        if (deltaY < -100) { // 向上阈值（中心点向上>100px触发，正好对应200px间距）
             joystickInputs.w = true;
             btnUp.style.backgroundImage = "url('up_02.png.PNG')";
         }
-        if (deltaY > deadZone) {
+        if (deltaY > 100) {
             joystickInputs.s = true;
             btnDown.style.backgroundImage = "url('down_02.png.PNG')";
         }
-        if (deltaX < -deadZone) {
+        if (deltaX < -100) {
             joystickInputs.a = true;
             btnLeft.style.backgroundImage = "url('left_02.png.PNG')";
         }
-        if (deltaX > deadZone) {
+        if (deltaX > 100) {
             joystickInputs.d = true;
             btnRight.style.backgroundImage = "url('right_02.png.PNG')";
         }
@@ -202,7 +198,7 @@
     }
 
     function clearJoystickInput(e) {
-        if (e) e.preventDefault();
+        if(e) e.preventDefault();
         isJoystickDragging = false;
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -211,12 +207,13 @@
         resetJoystickVisuals();
     }
 
-    joystick.addEventListener('touchstart', handleJoystickTouch, { passive: false });
-    joystick.addEventListener('touchmove', handleJoystickTouch, { passive: false });
-    joystick.addEventListener('touchend', clearJoystickInput, { passive: false });
-    joystick.addEventListener('touchcancel', clearJoystickInput, { passive: false });
+    // 给整个container监听拖拽，实现滑动摇杆！（如果只绑按钮，不能滑着走！）
+    document.addEventListener('touchstart', handleJoystickTouch, { passive: false });
+    document.addEventListener('touchmove', handleJoystickTouch, { passive: false });
+    document.addEventListener('touchend', clearJoystickInput, { passive: false });
+    document.addEventListener('touchcancel', clearJoystickInput, { passive: false });
 
-    joystick.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousedown', (e) => {
         e.preventDefault();
         isJoystickDragging = true;
         calculateJoystickInput(e.clientX, e.clientY);
@@ -232,7 +229,7 @@
         if (!isJoystickDragging) return;
         clearJoystickInput(e);
     });
-</script>
 
+</script>
 </body>
 </html>
