@@ -1,70 +1,78 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project: The Phantom Thief — Demo</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #f0f0f0;
-            touch-action: none;
-            user-select: none;
-        }
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        /* 人物：保持当前完美大小，不动！ */
-        #miku {
-            position: absolute;
-            width: 160px;
-            height: auto;
-            transform: translate(-50%, -50%) scale(2.5); 
-            transform-origin: center;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-        /* 【整组摇杆！一起放大！！复刻原版紧凑十字！！】 */
-        #joystick {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            width: 240px;
-            height: 240px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 0px; /* 零缝隙！原版十字紧紧拼在一起！ */
-            touch-action: none;
-            /* 整块放大！位置锚定左下角，不拆散图标！ */
-            transform: scale(3.2);
-            transform-origin: bottom left;
-        }
-        .joy-btn {
-            width: 100%;
-            height: 100%;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            pointer-events: auto;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-        #btn-up    { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
-        #btn-left  { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
-        #btn-middle{ grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
-        #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png.PNG'); }
-        #btn-down  { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Project: The Phantom Thief — Demo</title>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #f0f0f0;
+        touch-action: none;
+        user-select: none;
+    }
+
+    #game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    /* 人物：保持当前大小，完全不动！ */
+    #miku {
+        position: absolute;
+        width: 160px;
+        height: auto;
+        transform: translate(-50%, -50%) scale(2.5);
+        transform-origin: center;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+    }
+
+    /* 摇杆网格放大，容纳 5 个部位各自 500% 放大 */
+    #joystick {
+        position: absolute;
+        left: 40px;
+        bottom: 40px;
+        width: 520px;
+        height: 520px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr;
+        gap: 2px;
+        touch-action: none;
+    }
+
+    /* 方向杆每个部位各自放大 500% */
+    .joy-btn {
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        pointer-events: auto;
+        transform: scale(5);
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+    }
+
+    #btn-up    { grid-column: 2; grid-row: 1; background-image: url('up_01.png.PNG'); }
+    #btn-left  { grid-column: 1; grid-row: 2; background-image: url('left_01.png.PNG'); }
+    #btn-middle{ grid-column: 2; grid-row: 2; background-image: url('middle.png.PNG'); }
+    #btn-right { grid-column: 3; grid-row: 2; background-image: url('right_01.png.PNG'); }
+    #btn-down  { grid-column: 2; grid-row: 3; background-image: url('down_01.png.PNG'); }
+</style>
 </head>
 <body>
 
 <div id="game-container">
-    <img id="miku" src="miku_01.png.PNG" alt="sprite" draggable="false">
-    
+    <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
+
     <div id="joystick">
         <div></div>
         <div id="btn-up" class="joy-btn"></div>
@@ -85,7 +93,7 @@
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
-    
+
     let mikuX = window.innerWidth / 2;
     let mikuY = window.innerHeight / 2;
     const speed = 5;
@@ -157,8 +165,8 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        const deadZone = 25;
-        
+        const deadZone = 120;
+
         joystickInputs.w = false;
         joystickInputs.s = false;
         joystickInputs.a = false;
@@ -194,7 +202,7 @@
     }
 
     function clearJoystickInput(e) {
-        if(e) e.preventDefault();
+        if (e) e.preventDefault();
         isJoystickDragging = false;
         joystickInputs.w = false;
         joystickInputs.s = false;
@@ -224,7 +232,7 @@
         if (!isJoystickDragging) return;
         clearJoystickInput(e);
     });
-
 </script>
+
 </body>
 </html>
