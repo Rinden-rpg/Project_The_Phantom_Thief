@@ -2,25 +2,39 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Project: The Phantom Thief — Demo</title>
+<!-- 彻底禁用双击缩放、手势缩放等原生行为 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Project: The Phantom Thief — Demo (3K Locked)</title>
 <style>
     * {
         box-sizing: border-box;
     }
 
+    /* 视口外围：纯黑背景，充当安全区/黑边，采用 Flexbox 绝对居中内部容器 */
     body {
         margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
         overflow: hidden;
-        background-color: #f0f0f0;
+        background-color: #000000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         touch-action: none;
         user-select: none;
     }
 
+    /* 游戏主画布：锁定 2250x3000 (3:4 3K 比例) 
+       所有内部元素的像素值都将基于这个绝对分辨率进行计算 */
     #game-container {
         position: relative;
-        width: 100vw;
-        height: 100vh;
+        width: 2250px;
+        height: 3000px;
+        background-color: #f0f0f0;
+        overflow: hidden;
+        /* 通过中心缩放，配合 JS 实现全设备完美贴合 */
+        transform-origin: center center;
     }
 
     /* 人物：锁死原样，一丝不动 */
@@ -35,7 +49,7 @@
     }
 
     /* 摇杆定位锚点 = 四角星【中心】
-       距离屏幕左边缘500px，距离屏幕下边缘500px，真实物理像素！ */
+       距离 3K 画布左边缘500px，距离下边缘500px */
     #joy-center {
         position: absolute;
         left: 500px;
@@ -62,12 +76,13 @@
         pointer-events: auto;
     }
 
-    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
-    #btn-up    { left:0;   top:-200; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
-    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
-    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
+    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 
+       已补充缺失的 px 单位，保证所有浏览器内核渲染标准一致 */
+    #btn-up    { left: 0;      top: -200px; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left: -200px; top: 0;      background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left: 0;      top: 0;      background-image: url('middle.png.PNG'); }
+    #btn-right { left: 200px;  top: 0;      background-image: url('right_01.png.PNG'); }
+    #btn-down  { left: 0;      top: 200px;  background-image: url('down_01.png.PNG'); }
 
 </style>
 </head>
@@ -86,6 +101,14 @@
 </div>
 
 <script>
+    // --------------------------------------------------------
+    // 1. 常量与环境初始化 (3K 分辨率设定)
+    // --------------------------------------------------------
+    const LOGICAL_WIDTH = 2250;
+    const LOGICAL_HEIGHT = 3000;
+    let currentScale = 1; // 记录当前画布的缩放率
+
+    const gameContainer = document.getElementById('game-container');
     const miku = document.getElementById('miku');
     const joyCenter = document.getElementById('joy-center');
     const btnUp = document.getElementById('btn-up');
@@ -93,14 +116,39 @@
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
 
-    let mikuX = window.innerWidth / 2;
-    let mikuY = window.innerHeight / 2;
-    const speed = 5;
+    // 由于画布是 3K 级别，速度也需要相应放大以保持肉眼可见的移动流畅度
+    let mikuX = LOGICAL_WIDTH / 2;
+    let mikuY = LOGICAL_HEIGHT / 2;
+    const speed = 15; 
 
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
     let isJoystickDragging = false;
 
+    // --------------------------------------------------------
+    // 2. 动态视口缩放引擎 (核心适配逻辑)
+    // --------------------------------------------------------
+    function resizeCanvas() {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        // 计算宽和高的缩放比，取极小值确保完整显示并保留黑边 (contain 逻辑)
+        const scaleX = windowWidth / LOGICAL_WIDTH;
+        const scaleY = windowHeight / LOGICAL_HEIGHT;
+        currentScale = Math.min(scaleX, scaleY);
+        
+        // 应用矩阵缩放
+        gameContainer.style.transform = `scale(${currentScale})`;
+    }
+
+    // 监听窗口大小变化及设备旋转
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+    resizeCanvas(); // 初始化执行
+
+    // --------------------------------------------------------
+    // 3. 角色坐标与边界运算
+    // --------------------------------------------------------
     miku.style.left = mikuX + 'px';
     miku.style.top = mikuY + 'px';
 
@@ -113,6 +161,7 @@
         if (keyboardInputs.a || joystickInputs.a) dx -= speed;
         if (keyboardInputs.d || joystickInputs.d) dx += speed;
 
+        // 斜角移动速率归一化处理
         if (dx !== 0 && dy !== 0) {
             const length = Math.sqrt(dx * dx + dy * dy);
             dx = (dx / length) * speed;
@@ -125,8 +174,9 @@
         const halfWidth = (miku.offsetWidth / 2) || 80;
         const halfHeight = (miku.offsetHeight / 2) || 80;
 
-        mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
-        mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
+        // 碰撞检测现在严密绑定在绝对逻辑分辨率 (2250 x 3000) 上
+        mikuX = Math.max(halfWidth, Math.min(LOGICAL_WIDTH - halfWidth, mikuX));
+        mikuY = Math.max(halfHeight, Math.min(LOGICAL_HEIGHT - halfHeight, mikuY));
 
         miku.style.left = mikuX + 'px';
         miku.style.top = mikuY + 'px';
@@ -135,6 +185,9 @@
     }
     updatePosition();
 
+    // --------------------------------------------------------
+    // 4. 输入设备事件监听
+    // --------------------------------------------------------
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         if (keyboardInputs.hasOwnProperty(key)) {
@@ -157,14 +210,16 @@
     }
 
     function calculateJoystickInput(clientX, clientY) {
+        // getBoundingClientRect 提取的是基于当前屏幕物理尺寸的坐标
         const rect = joyCenter.getBoundingClientRect();
         const centerX = rect.left;
         const centerY = rect.top;
 
-        const deltaX = clientX - centerX;
-        const deltaY = clientY - centerY;
+        // 计算出屏幕物理偏差后，必须除以 currentScale 映射回 3K 逻辑坐标系！
+        const deltaX = (clientX - centerX) / currentScale;
+        const deltaY = (clientY - centerY) / currentScale;
 
-        // 触发阈值对齐200px间距：超过100px就触发对应方向
+        // 阈值保持纯粹的逻辑像素判定
         const triggerThreshold = 100;
         const deadZone = 30;
 
@@ -231,4 +286,4 @@
 
 </script>
 </body>
-</html> 
+</html>
