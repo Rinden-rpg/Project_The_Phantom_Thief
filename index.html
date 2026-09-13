@@ -23,30 +23,42 @@
         height: 100vh;
     }
 
-    /* 人物：锁死原样，一丝不动 */
+    /* 动态生成的背景画布，铺满全屏，放在最底层 */
+    #game-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        z-index: 1;
+    }
+
+    /* 人物：锁死在屏幕正中心，一丝不动 */
     #miku {
         position: absolute;
+        left: 50% !important;
+        top: 50% !important;
         width: 160px;
         height: auto;
         transform: translate(-50%, -50%) scale(2.5);
         transform-origin: center;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
+        z-index: 10;
     }
 
-    /* 摇杆定位锚点 = 四角星【中心】
-       距离屏幕左边缘500px，距离屏幕下边缘500px，真实物理像素！ */
+    /* 摇杆定位锚点 */
     #joy-center {
         position: absolute;
         left: 400px;
         bottom: 350px;
         width: 0;
         height: 0;
+        z-index: 20;
     }
 
-    /* 每个按钮：
-    - 布局原点是自己的中心
-    - transform-origin:center; scale(5)只放大【画面，不改位置坐标】！！ */
     .joy-btn {
         position: absolute;
         width: 150px;
@@ -58,22 +70,22 @@
         background-position: center;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
-        /* 热区还是40px原始大小！视觉是放大的像素画 */
         pointer-events: auto;
     }
 
-    /* ↓【真实像素距离：距离中心200px，不受scale影响！】 */
-    #btn-up    { left:0;   top:-200; background-image: url('up_01.png.PNG'); }
-    #btn-left  { left:-200;top:0;     background-image: url('left_01.png.PNG'); }
-    #btn-middle{ left:0;   top:0;     background-image: url('middle.png.PNG'); }
-    #btn-right { left:200; top:0;     background-image: url('right_01.png.PNG'); }
-    #btn-down  { left:0;   top:200;   background-image: url('down_01.png.PNG'); }
+    /* 补全了 px 单位，确保浏览器能正确解析位置 */
+    #btn-up    { left: 0;      top: -200px; background-image: url('up_01.png.PNG'); }
+    #btn-left  { left: -200px; top: 0;      background-image: url('left_01.png.PNG'); }
+    #btn-middle{ left: 0;      top: 0;      background-image: url('middle.png.PNG'); }
+    #btn-right { left: 200px;  top: 0;      background-image: url('right_01.png.PNG'); }
+    #btn-down  { left: 0;      top: 200px;  background-image: url('down_01.png.PNG'); }
 
 </style>
 </head>
 <body>
 
 <div id="game-container">
+    <canvas id="game-canvas"></canvas>
     <img id="miku" src="miku_01.png.PNG" alt="Miku" draggable="false">
 
     <div id="joy-center">
@@ -86,25 +98,132 @@
 </div>
 
 <script>
-    const miku = document.getElementById('miku');
+    // --- 1. 画布与自适应设置 ---
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // --- 2. 图像资源加载与昼夜循环系统 ---
+    const assets = {
+        dayFloor: new Image(), nightFloor: new Image(),
+        dayManhole: new Image(), nightManhole: new Image(),
+        dayLight: new Image(), nightLight: new Image()
+    };
+    assets.dayFloor.src = 'stone_floor_01.PNG';
+    assets.nightFloor.src = 'stone_floor_night_01.PNG';
+    assets.dayManhole.src = 'manhole_01.PNG';
+    assets.nightManhole.src = 'manhole_night _01.PNG';
+    assets.dayLight.src = 'streetlights_01.PNG';
+    assets.nightLight.src = 'streetlights_night_01.PNG';
+
+    let isNight = false;
+    // 每 10 分钟自动切换昼夜
+    setInterval(() => { isNight = !isNight; }, 10 * 60 * 1000);
+
+    // --- 3. 渲染核心与伪随机算法 ---
+    const TILE_SIZE = 128; // 1个地砖单位大小
+    let cameraX = 0;       // 摄像机世界坐标（决定背景往哪边滚）
+    let cameraY = 0;
+    const speed = 5;
+
+    // 伪随机函数：固定坐标永远生成固定结果
+    function pseudoRandom(x, y) {
+        let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+        return n - Math.floor(n);
+    }
+
+    function renderMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const currentFloor = isNight ? assets.nightFloor : assets.dayFloor;
+        const currentManhole = isNight ? assets.nightManhole : assets.dayManhole;
+        const currentLight = isNight ? assets.nightLight : assets.dayLight;
+
+        // 计算当前屏幕覆盖的地砖网格范围
+        const startTileX = Math.floor((cameraX - canvas.width / 2) / TILE_SIZE) - 2;
+        const endTileX = Math.ceil((cameraX + canvas.width / 2) / TILE_SIZE) + 2;
+        const startTileY = Math.floor((cameraY - canvas.height / 2) / TILE_SIZE) - 2;
+        const endTileY = Math.ceil((cameraY + canvas.height / 2) / TILE_SIZE) + 2;
+
+        // A. 铺满基础地砖
+        for (let tx = startTileX; tx <= endTileX; tx++) {
+            for (let ty = startTileY; ty <= endTileY; ty++) {
+                const screenX = tx * TILE_SIZE - cameraX + canvas.width / 2;
+                const screenY = ty * TILE_SIZE - cameraY + canvas.height / 2;
+                if (currentFloor.complete) {
+                    ctx.drawImage(currentFloor, screenX, screenY, TILE_SIZE, TILE_SIZE);
+                }
+            }
+        }
+
+        // B. 绘制井盖（按 300 贴图单位划分网格，保证不拥挤）
+        const SECTOR_SIZE = 300; 
+        const minSectorX = Math.floor(startTileX / SECTOR_SIZE) - 1;
+        const maxSectorX = Math.floor(endTileX / SECTOR_SIZE) + 1;
+        const minSectorY = Math.floor(startTileY / SECTOR_SIZE) - 1;
+        const maxSectorY = Math.floor(endTileY / SECTOR_SIZE) + 1;
+
+        for (let sx = minSectorX; sx <= maxSectorX; sx++) {
+            for (let sy = minSectorY; sy <= maxSectorY; sy++) {
+                if (pseudoRandom(sx, sy) < 0.3) {
+                    // 决定该区块内井盖的具体坐标
+                    const mTileX = sx * SECTOR_SIZE + Math.floor(pseudoRandom(sx + 1, sy) * (SECTOR_SIZE - 4));
+                    const mTileY = sy * SECTOR_SIZE + Math.floor(pseudoRandom(sx, sy + 1) * (SECTOR_SIZE - 4));
+                    
+                    const screenX = mTileX * TILE_SIZE - cameraX + canvas.width / 2;
+                    const screenY = mTileY * TILE_SIZE - cameraY + canvas.height / 2;
+
+                    if (currentManhole.complete) {
+                        ctx.drawImage(currentManhole, screenX, screenY, TILE_SIZE * 2, TILE_SIZE * 2);
+                    }
+                }
+            }
+        }
+
+        // C. 绘制路灯（间距 20 单位有序排布）
+        const LIGHT_SPACING = 20; 
+        const minLightGridY = Math.floor(startTileY / LIGHT_SPACING) - 1;
+        const maxLightGridY = Math.ceil(endTileY / LIGHT_SPACING) + 1;
+
+        for (let gy = minLightGridY; gy <= maxLightGridY; gy += 2) {
+            if (pseudoRandom(gy, 8888) < 0.5) {
+                const tileY = gy * LIGHT_SPACING;
+                const minX = Math.floor(startTileX / LIGHT_SPACING) - 1;
+                const maxX = Math.ceil(endTileX / LIGHT_SPACING) + 1;
+
+                for (let gx = minX; gx <= maxX; gx++) {
+                    const tileX = gx * LIGHT_SPACING;
+                    const screenX = tileX * TILE_SIZE - cameraX + canvas.width / 2;
+                    const screenY = tileY * TILE_SIZE - cameraY + canvas.height / 2;
+
+                    if (currentLight.complete) {
+                        ctx.drawImage(currentLight, screenX, screenY, TILE_SIZE, TILE_SIZE * 2);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- 4. 移动与输入逻辑 ---
     const joyCenter = document.getElementById('joy-center');
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
 
-    let mikuX = window.innerWidth / 2;
-    let mikuY = window.innerHeight / 2;
-    const speed = 5;
-
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
     let isJoystickDragging = false;
 
-    miku.style.left = mikuX + 'px';
-    miku.style.top = mikuY + 'px';
-
-    function updatePosition() {
+    // 主游戏循环，替代之前的 updatePosition
+    function gameLoop() {
         let dx = 0;
         let dy = 0;
 
@@ -119,22 +238,17 @@
             dy = (dy / length) * speed;
         }
 
-        mikuX += dx;
-        mikuY += dy;
+        // 摄像机移动逻辑（因为是逆向运动，按方向键加坐标即为背景反向移动）
+        cameraX += dx;
+        cameraY += dy;
 
-        const halfWidth = (miku.offsetWidth / 2) || 80;
-        const halfHeight = (miku.offsetHeight / 2) || 80;
-
-        mikuX = Math.max(halfWidth, Math.min(window.innerWidth - halfWidth, mikuX));
-        mikuY = Math.max(halfHeight, Math.min(window.innerHeight - halfHeight, mikuY));
-
-        miku.style.left = mikuX + 'px';
-        miku.style.top = mikuY + 'px';
-
-        requestAnimationFrame(updatePosition);
+        // 渲染每一帧
+        renderMap();
+        requestAnimationFrame(gameLoop);
     }
-    updatePosition();
+    gameLoop();
 
+    // 键盘监听
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         if (keyboardInputs.hasOwnProperty(key)) {
@@ -149,6 +263,7 @@
         }
     });
 
+    // 摇杆控制保持原样（无需 Scale 换算）
     function resetJoystickVisuals() {
         btnUp.style.backgroundImage = "url('up_01.png.PNG')";
         btnDown.style.backgroundImage = "url('down_01.png.PNG')";
@@ -164,7 +279,6 @@
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
 
-        // 触发阈值对齐200px间距：超过100px就触发对应方向
         const triggerThreshold = 100;
         const deadZone = 30;
 
@@ -231,4 +345,4 @@
 
 </script>
 </body>
-</html> 
+</html>
