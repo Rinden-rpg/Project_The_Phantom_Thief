@@ -78,7 +78,6 @@
         pointer-events: auto;
     }
 
-
     #btn-up    { left: 0;      top: -200; background-image: url('up_01.png.PNG'); }
     #btn-left  { left: -200; top: 0;      background-image: url('left_01.png.PNG'); }
     #btn-middle{ left: 0;      top: 0;      background-image: url('middle.png.PNG'); }
@@ -106,7 +105,6 @@
     // --- 1. 画布与自适应设置 ---
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
-    // ✅修复：Safari / iOS 必须加webkit前缀！缺这个画布地砖一滚动就糊
     ctx.imageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
 
@@ -128,13 +126,17 @@
     // 每 10 分钟自动切换昼夜
     setInterval(() => { isNight = !isNight; }, 10 * 60 * 1000);
 
-    // --- 3. 渲染核心与伪随机算法 ---
+    // --- 3. 渲染核心与地图范围设置 ---
     const TILE_SIZE = 57; // 1个地砖单位大小为57px
-    let cameraX = 0;       // 摄像机世界坐标（决定背景往哪边滚）
-    let cameraY = 0;
+    const MAP_TILES = 1000; // 地砖地图限定为 1000x1000 块
+    const MAP_SIZE = MAP_TILES * TILE_SIZE; // 总像素宽度/高度 (57000px)
+
+    // 默认初始出生点设置在 1000x1000 地图的正中央
+    let cameraX = MAP_SIZE / 2;
+    let cameraY = MAP_SIZE / 2;
     const speed = 5;
 
-    // 伪随机函数：固定坐标永远生成固定结果
+    // 伪随机函数
     function pseudoRandom(x, y) {
         let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
         return n - Math.floor(n);
@@ -151,9 +153,12 @@
         const startTileY = Math.floor((cameraY - canvas.height / 2) / TILE_SIZE) - 2;
         const endTileY = Math.ceil((cameraY + canvas.height / 2) / TILE_SIZE) + 2;
 
-        // A. 铺满基础地砖
+        // A. 铺满基础地砖（严格限制在 0 ~ 999 块地砖范围内）
         for (let tx = startTileX; tx <= endTileX; tx++) {
+            if (tx < 0 || tx >= MAP_TILES) continue;
             for (let ty = startTileY; ty <= endTileY; ty++) {
+                if (ty < 0 || ty >= MAP_TILES) continue;
+                
                 const screenX = tx * TILE_SIZE - cameraX + canvas.width / 2;
                 const screenY = ty * TILE_SIZE - cameraY + canvas.height / 2;
                 if (currentFloor.complete) {
@@ -174,7 +179,7 @@
     const joystickInputs = { w: false, a: false, s: false, d: false };
     let isJoystickDragging = false;
 
-    // 主游戏循环，替代之前的 updatePosition
+    // 主游戏循环
     function gameLoop() {
         let dx = 0;
         let dy = 0;
@@ -190,9 +195,13 @@
             dy = (dy / length) * speed;
         }
 
-        // 摄像机移动逻辑（因为是逆向运动，按方向键加坐标即为背景反向移动）
+        // 摄像机坐标移动
         cameraX += dx;
         cameraY += dy;
+
+        // 【边界死锁逻辑】：限制角色坐标不能超出 0 ~ 1000*57px 的范围，撞墙后只能向反方向走
+        cameraX = Math.max(0, Math.min(MAP_SIZE, cameraX));
+        cameraY = Math.max(0, Math.min(MAP_SIZE, cameraY));
 
         // 渲染每一帧
         renderMap();
