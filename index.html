@@ -174,7 +174,6 @@
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
-    const mikuImg = document.getElementById('miku'); // 获取Miku图片元素
 
     const keyboardInputs = { w: false, a: false, s: false, d: false };
     const joystickInputs = { w: false, a: false, s: false, d: false };
@@ -194,17 +193,6 @@
             const length = Math.sqrt(dx * dx + dy * dy);
             dx = (dx / length) * speed;
             dy = (dy / length) * speed;
-        }
-
-        // 切换角色贴图：向前(上)、左上、右上移动时
-        if (dy < 0) {
-            if (mikuImg.getAttribute('src') !== 'miku_02.PNG') {
-                mikuImg.setAttribute('src', 'miku_02.PNG');
-            }
-        } else {
-            if (mikuImg.getAttribute('src') !== 'miku_01.png.PNG') {
-                mikuImg.setAttribute('src', 'miku_01.png.PNG');
-            }
         }
 
         // 摄像机坐标移动
